@@ -52,18 +52,64 @@ queue()
 function dataLoaded(err, rows, metadata){
 
     //First, combine "rows" and "metadata", so that each country is assigned to a region
-
+        rows.forEach(function(row){
+            row.Region = metaDataMap.get(row.key);
+        });
     //Then create hierarchy based on regions, using d3.nest()
+        var data = d3.nest()
+            .key(function(d){
+                return d.Region;
+            })
+            .entries(rows);
+        //Finally, perform a treemap layout on the data
+    treemap
+        .value(function(d){
+            return d.data.get(y0);
+        });
+console.log(data);
 
-    //Finally, perform a treemap layout on the data
+        var root = {
+            key: 'region',
+            values: data
+        };
 
-    //draw(root);
+console.log(root);
+    draw(root);
 }
 
 function draw(root){
     //Append <rect> element for each node in the treemap
+    var nodes = svg.selectAll('.node')
+        .data(treemap(root), function(d){return d.key;});
 
+    var nodesEnter = nodes
+        .enter()
+        .append('g')
+        .attr('class',"node")
+        .classed('leaf',function(d){
+            return !(d.children);
+        })
+        .attr('transform',function(d){
+            return "translate("+d.x+','+d.y+')';
+        });
+    nodesEnter
+        .append('rect')
+        .attr('width',function(d){return d.dx; })
+        .attr('height',function(d){return d.dy;})
+        .style('fill-opacity',function(d){ return .75-d.depth/8});
+        
     //Also append <text> label for each tree node that is a leaf
+    nodesEnter
+        .each(function(d){
+            if((d.dx > 60) && (!d.children)){
+                d3.select(this).append('text')
+                    .text(d.key)
+                    .attr('dx', d.dx/2)
+                    .attr('dy', d.dy/2)
+                    .attr('text-anchor','middle');
+            }
+        });
+
 }
 
 function parse(d){
