@@ -19,6 +19,21 @@ var scales = {};
     scales.x = d3.scale.log().range([0,width]);
     scales.y = d3.scale.linear().range([height,0]);
 
+var scaleColor = d3.scale.ordinal()
+            .range([
+                'white','blue','orange','red','yeallow',
+                'green','teal','gray'])
+        
+            .domain([   "North America",
+                "Europe & Central Asia",
+                "East Asia & Pacific",
+                "Latin America & Caribbean",
+                "Middle East & North Africa",
+                "South Asia",
+                "Sub-Saharan Africa",
+                "undefined"
+                ]);
+
 
 //Global variables
 var yVariable = "CO2 emissions (kt)",
@@ -39,7 +54,7 @@ var treemap = d3.layout.treemap()
     })
     .size([width,height])
     .sticky(true)
-    .padding([5,5,5,5]);
+    .padding([2,2,2,2]);
 
 
 
@@ -80,15 +95,15 @@ console.log(root);
 function draw(root){
     //Append <rect> element for each node in the treemap
     var nodes = svg.selectAll('.node')
-        .data(treemap(root), function(d){return d.key;});
+        .data(treemap(root), function(d){return d.key;})
+         .classed('leaf',function(d){
+            return !(d.children);
+        });
 
     var nodesEnter = nodes
         .enter()
         .append('g')
         .attr('class',"node")
-        .classed('leaf',function(d){
-            return !(d.children);
-        })
         .attr('transform',function(d){
             return "translate("+d.x+','+d.y+')';
         });
@@ -96,17 +111,25 @@ function draw(root){
         .append('rect')
         .attr('width',function(d){return d.dx; })
         .attr('height',function(d){return d.dy;})
-        .style('fill-opacity',function(d){ return .75-d.depth/8});
-        
+        .style('fill-opacity',function(d){ return .75-d.depth/8})
+        .style('fill', function(d){
+            var continent = metaDataMap.get(d.key)
+
+            return scaleColor(continent);
+        })
+        .style('stroke','black')        
+        .style('stroke-width','.25px');
+
     //Also append <text> label for each tree node that is a leaf
     nodesEnter
         .each(function(d){
-            if((d.dx > 60) && (!d.children)){
+            if((d.dx > 50) && (!d.children)){
                 d3.select(this).append('text')
                     .text(d.key)
                     .attr('dx', d.dx/2)
                     .attr('dy', d.dy/2)
-                    .attr('text-anchor','middle');
+                    .attr('text-anchor','middle')
+                    .style('font-size','50%');
             }
         });
 
